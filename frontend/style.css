@@ -1,0 +1,223 @@
+/*
+ * 样式设计 (style.css)
+ * 职责：定义页面整体布局、交互元素样式、可视化元素基础样式。
+ *       采用居中布局，各区域间距适中，按钮按功能区分颜色。
+ */
+
+/* ── 全局重置与基础 ── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* ── 顶部标题栏 ── */
+.header {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 20px;
+    padding: 16px 24px;
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    font-size: 1.4em;
+    font-weight: 600;
+}
+
+.status-badge {
+    padding: 4px 16px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    background: #4caf50;
+    color: #fff;
+    transition: background 0.3s;
+}
+
+.status-badge.error { background: #f44336; }
+.status-badge.running { background: #ff9800; }
+
+/* ── 控制面板 ── */
+.control-panel {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 16px;
+    padding: 20px 24px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.input-row label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.input-row input:focus {
+    border-color: #1a73e8;
+    outline: none;
+}
+
+.option-row {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 16px;
+}
+
+.option-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-group label {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.option-group select {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95em;
+    background: #fff;
+    cursor: pointer;
+}
+
+.option-group select:focus {
+    border-color: #1a73e8;
+    outline: none;
+}
+
+/* ── 按钮通用样式 ── */
+.button-row {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.1s;
+    color: #fff;
+}
+
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn:active { transform: translateY(0); filter: brightness(0.95); }
+.btn:disabled { background: #ccc; cursor: not-allowed; transform: none; filter: none; }
+
+.btn-primary { background: #1a73e8; }
+.btn-warning { background: #ff9800; }
+.btn-success { background: #4caf50; }
+.btn-danger  { background: #f44336; }
+
+/* ── 步骤说明区域 ── */
+.description-panel {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 16px;
+    padding: 16px 24px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.description-panel h3 {
+    margin-bottom: 8px;
+    color: #1a1a2e;
+    font-size: 1.05em;
+}
+
+.step-text {
+    min-height: 40px;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: #555;
+    border-left: 4px solid #1a73e8;
+}
+
+/* ── 可视化区域 ── */
+.visualization-panel {
+    width: 100%;
+    max-width: 900px;
+    margin: 16px 0 24px;
+    padding: 16px 24px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex: 1;
+}
+
+.visualization-panel h3 {
+    margin-bottom: 8px;
+    color: #1a1a2e;
+    font-size: 1.05em;
+}
+
+.svg-container {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #fafbfc;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.svg-container svg {
+    display: block;
+}
+
+/* ── 页脚 ── */
+.footer {
+    width: 100%;
+    max-width: 900px;
+    margin-bottom: 20px;
+    text-align: center;
+    color: #999;
+    font-size: 0.85em;
+}
+
+/* ── 节点动画 ── */
+@keyframes nodePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
