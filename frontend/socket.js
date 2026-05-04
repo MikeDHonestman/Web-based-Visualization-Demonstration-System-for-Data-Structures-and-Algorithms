@@ -7,7 +7,7 @@ var WSManager = (function () {
     'use strict';
 
     var ws = null;
-    var url = 'ws://' + location.host + '/ws';
+    var url = 'ws://localhost:5000/ws';
     var messageHandlers = [];
     var statusHandlers = [];
     var reconnectTimer = null;
@@ -49,6 +49,14 @@ var WSManager = (function () {
                 // 错误消息
                 if (data.type === 'error') {
                     notifyStatus('error', data.message);
+                    return;
+                }
+
+                // 批量步骤数据（步进模式）
+                if (data.type === 'steps_batch') {
+                    messageHandlers.forEach(function (handler) {
+                        handler(data);
+                    });
                     return;
                 }
 

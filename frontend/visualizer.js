@@ -28,17 +28,18 @@ var Visualizer = (function () {
     };
 
     /* ═══════ 堆创建的树形布局坐标 ═══════
-     * 9个节点（最多4层）在800×450画布上的预定义坐标
-     * 使用索引映射（数组索引 -> 树中位置）
+     * 动态计算 nodes 在 800×450 画布上的坐标，支持 1~31 个节点
      */
-    var HEAP_POSITIONS = [
-        [400, 50],           // 索引0，根节点
-        [220, 150], [580, 150],  // 索引1,2
-        [100, 270], [340, 270], [460, 270], [700, 270],  // 索引3,4,5,6
-        [160, 400], [400, 400],  // 索引7,8
-        // 以下为10-14的扩展位置（可选）
-        [560, 400], [700, 400], [60, 490], [220, 490], [340, 490],
-    ];
+    function getHeapPosition(index) {
+        var level = Math.floor(Math.log2(index + 1));
+        var totalLevels = Math.floor(Math.log2(index + 1)) + 1;
+        var firstInLevel = Math.pow(2, level) - 1;
+        var posInLevel = index - firstInLevel;
+        var nodesInLevel = Math.pow(2, level);
+        var x = 800 * (posInLevel + 0.5) / nodesInLevel;
+        var y = 38 + level * 104;
+        return [x, y];
+    }
 
     var NODE_RADIUS = 22;
 
@@ -58,19 +59,18 @@ var Visualizer = (function () {
         clearSvg();
 
         var n = arr.length;
-        var usedIndices = HEAP_POSITIONS.slice(0, n);
 
         // 绘制边（父节点 -> 子节点连接线）
         for (var i = 0; i < n; i++) {
             var leftChild = 2 * i + 1;
             var rightChild = 2 * i + 2;
-            if (leftChild < n) drawEdge(usedIndices[i], usedIndices[leftChild]);
-            if (rightChild < n) drawEdge(usedIndices[i], usedIndices[rightChild]);
+            if (leftChild < n) drawEdge(getHeapPosition(i), getHeapPosition(leftChild));
+            if (rightChild < n) drawEdge(getHeapPosition(i), getHeapPosition(rightChild));
         }
 
         // 绘制节点（圆形+数值文字）
         for (var i = 0; i < n; i++) {
-            drawHeapNode(usedIndices[i], arr[i], i);
+            drawHeapNode(getHeapPosition(i), arr[i], i);
         }
     }
 
@@ -104,7 +104,7 @@ var Visualizer = (function () {
      * @param {Object} step 后端推送的标准化步骤数据
      */
     function renderStep(step) {
-        if (!step || step.type === 'completed' || step.status === 'completed') {
+        if (!step || step.type === 'completed') {
             animAllDone();
             return;
         }
@@ -132,7 +132,6 @@ var Visualizer = (function () {
         var compare = step.compare || [];
         var swap = step.swap;
         var n = arr.length;
-        var positions = HEAP_POSITIONS.slice(0, n);
 
         // 清除旧节点（保留边）
         var oldNodes = svg.querySelectorAll('g.heap-node');
@@ -143,13 +142,13 @@ var Visualizer = (function () {
             var color = 'default';
             if (highlight.indexOf(i) !== -1) color = 'highlight';
             else if (compare.indexOf(i) !== -1) color = 'compare';
-            drawHeapNode(positions[i], arr[i], i, color);
+            drawHeapNode(getHeapPosition(i), arr[i], i, color);
         }
 
         // 交换动画：在交换的两个节点之间添加临时的动画指示
         if (swap && swap.length === 2) {
-            var p1 = positions[swap[0]];
-            var p2 = positions[swap[1]];
+            var p1 = getHeapPosition(swap[0]);
+            var p2 = getHeapPosition(swap[1]);
             drawSwapIndicator(p1, p2);
         }
     }

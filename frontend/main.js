@@ -2,6 +2,7 @@
  * 前端主逻辑模块 (main.js)
  * 职责：整合前端所有模块，处理用户交互，协调输入解析、请求提交、
  *       WebSocket通信、可视化渲染的完整流程。
+ *       支持自动播放与手动步进（上一步/下一步）两种模式。
  */
 (function () {
     'use strict';
@@ -13,6 +14,8 @@
     var btnSubmit      = document.getElementById('btnSubmit');
     var btnPause       = document.getElementById('btnPause');
     var btnContinue    = document.getElementById('btnContinue');
+    var btnStepPrev    = document.getElementById('btnStepPrev');
+    var btnStepNext    = document.getElementById('btnStepNext');
     var btnReset       = document.getElementById('btnReset');
     var stepDesc       = document.getElementById('stepDescription');
     var hintText       = document.getElementById('hintText');
@@ -26,34 +29,69 @@
     var parsedInputData = null;
     var totalSteps = 0;
 
+    // 步进历史
+    var stepHistory = [];
+    var currentStepIdx = -1;
+    var autoPlayTimer = null;
+
     /* ═══════════════════════════════════════════════════════════
      *  页面初始化
      * ═══════════════════════════════════════════════════════════ */
     function init() {
-        // 建立WebSocket连接
         WSManager.connect();
 
-        // 注册WebSocket消息处理器（将步骤数据交给可视化模块）
-        WSManager.onMessage(function (step) {
-            handleStepData(step);
+        WSManager.onMessage(function (data) {
+            handleMessage(data);
         });
 
-        // 注册WebSocket状态监听器（更新页面状态提示）
         WSManager.onStatusChange(function (status, message) {
             updateStatus(status, message);
         });
 
-        // 绑定按钮事件
         btnSubmit.addEventListener('click', onSubmit);
         btnPause.addEventListener('click', onPause);
         btnContinue.addEventListener('click', onResume);
+        btnStepPrev.addEventListener('click', onStepPrev);
+        btnStepNext.addEventListener('click', onStepNext);
         btnReset.addEventListener('click', onReset);
 
-        // 算法切换时更新输入提示
         algoSelect.addEventListener('change', updateInputHint);
-
-        // 初始提示
         updateInputHint();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+     *  消息处理（支持批量步骤和单步骤两种格式）
+     * ═══════════════════════════════════════════════════════════ */
+    function handleMessage(data) {
+        if (data.type === 'connected') return;
+        if (data.type === 'error') {
+            setHint(data.message, 'error');
+            return;
+        }
+        if (data.type === 'completed') {
+            onCompleted();
+            return;
+        }
+        if (data.type === 'reset_done') return;
+
+        // 批量步骤数据
+        if (data.type === 'steps_batch' && data.steps) {
+            stepHistory = data.steps;
+            totalSteps = data.total_steps || data.steps.length;
+            currentStepIdx = -1;
+            startAutoPlay();
+            return;
+        }
+
+        // 兼容旧格式：单步骤数据
+        if (data.step_id !== undefined || data.description) {
+            stepHistory.push(data);
+            totalSteps = stepHistory.length;
+            currentStepIdx = stepHistory.length - 1;
+            if (!isPaused && isRunning) {
+                renderCurrentStep();
+            }
+        }
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -71,7 +109,6 @@
             return;
         }
 
-        // 前端预校验：解析输入文本为整数数组
         var parts = rawInput.split(',');
         var arr = [];
         for (var i = 0; i < parts.length; i++) {
@@ -93,7 +130,6 @@
         parsedInputData = arr;
         currentAlgorithm = algoSelect.value;
 
-        // 前端预校验：算法特定的长度检查
         if (currentAlgorithm === 'heap_create' && arr.length < 2) {
             setHint('堆创建至少需要2个整数', 'error');
             return;
@@ -103,7 +139,6 @@
             return;
         }
 
-        // 通过HTTP POST提交数据到后端
         setHint('正在提交数据...', 'info');
         btnSubmit.disabled = true;
 
@@ -124,27 +159,27 @@
                     return;
                 }
 
-                // 提交成功，保存session_id，开始演示
                 currentSessionId = result.session_id;
                 totalSteps = result.total_steps;
-                updateStatus('running', '演示中...');
 
-                // 初始化可视化画布
                 initVisualization(arr);
 
-                // 通过WebSocket发送开始演示指令
-                var interval = parseFloat(speedSelect.value) || 1.0;
                 var sent = WSManager.send({
                     action: 'start',
                     session_id: currentSessionId,
-                    interval: interval,
                 });
 
                 if (sent) {
                     isRunning = true;
+                    isPaused = false;
+                    stepHistory = [];
+                    currentStepIdx = -1;
                     setHint('数据提交成功，演示开始（共' + totalSteps + '步）', 'info');
                     btnPause.disabled = false;
+                    btnStepPrev.disabled = false;
+                    btnStepNext.disabled = false;
                     btnSubmit.disabled = true;
+                    btnContinue.disabled = true;
                 } else {
                     setHint('WebSocket未连接，请确认后端服务已启动', 'error');
                 }
@@ -157,48 +192,76 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-     *  步骤数据处理（来自WebSocket消息推送）
+     *  自动播放
      * ═══════════════════════════════════════════════════════════ */
-    function handleStepData(step) {
-        // 更新步骤说明文字
-        if (step.description) {
-            var stepNum = step.current_step || step.step_id || '';
-            stepDesc.innerHTML = '<strong>步骤 ' + stepNum + '：</strong>' + step.description;
-        }
+    function startAutoPlay() {
+        var interval = parseFloat(speedSelect.value) * 1000 || 1000;
+        updateStatus('running', '演示中...');
 
-        // 调用可视化模块渲染
-        Visualizer.renderStep(step);
+        advanceStep();
 
-        // 处理演示完成
-        if (step.type === 'completed' || step.status === 'completed') {
-            isRunning = false;
-            btnPause.disabled = true;
-            btnContinue.disabled = true;
-            btnSubmit.disabled = true;
-            updateStatus('completed', '演示完成');
-            setHint('演示已完成。可点击"重置"重新开始。', 'info');
+        autoPlayTimer = setInterval(function () {
+            if (isPaused) return;
+            if (currentStepIdx >= stepHistory.length - 1) {
+                stopAutoPlay();
+                onCompleted();
+                return;
+            }
+            advanceStep();
+        }, interval);
+    }
+
+    function stopAutoPlay() {
+        if (autoPlayTimer) {
+            clearInterval(autoPlayTimer);
+            autoPlayTimer = null;
         }
     }
 
+    function advanceStep() {
+        if (currentStepIdx < stepHistory.length - 1) {
+            currentStepIdx++;
+            renderCurrentStep();
+        }
+    }
+
+    function retreatStep() {
+        if (currentStepIdx > 0) {
+            currentStepIdx--;
+            renderCurrentStep();
+        }
+    }
+
+    function renderCurrentStep() {
+        if (currentStepIdx < 0 || currentStepIdx >= stepHistory.length) return;
+        var step = stepHistory[currentStepIdx];
+
+        btnStepPrev.disabled = (currentStepIdx <= 0);
+        btnStepNext.disabled = (currentStepIdx >= totalSteps - 1);
+
+        if (step.description) {
+            var stepNum = currentStepIdx + 1;
+            stepDesc.innerHTML = '<strong>步骤 ' + stepNum + '/' + totalSteps + '：</strong>' + step.description;
+        }
+
+        Visualizer.renderStep(step);
+    }
+
     /* ═══════════════════════════════════════════════════════════
-     *  交互控制：暂停 / 继续 / 重置
+     *  交互控制：暂停 / 继续 / 上一步 / 下一步 / 重置
      * ═══════════════════════════════════════════════════════════ */
 
     function onPause() {
         if (!isRunning || isPaused) return;
-
-        WSManager.send({ action: 'pause' });
         isPaused = true;
         btnPause.disabled = true;
         btnContinue.disabled = false;
         updateStatus('running', '已暂停');
-        setHint('演示已暂停，点击"继续"恢复演示', 'info');
+        setHint('演示已暂停，点击"继续"恢复自动演示，或使用"上一步/下一步"手动查看', 'info');
     }
 
     function onResume() {
         if (!isRunning || !isPaused) return;
-
-        WSManager.send({ action: 'resume' });
         isPaused = false;
         btnPause.disabled = false;
         btnContinue.disabled = true;
@@ -206,17 +269,58 @@
         setHint('演示继续...', 'info');
     }
 
+    function onStepPrev() {
+        if (!isRunning) return;
+        if (!isPaused) {
+            isPaused = true;
+            btnPause.disabled = true;
+            btnContinue.disabled = false;
+            updateStatus('running', '已暂停（手动步进）');
+        }
+        retreatStep();
+    }
+
+    function onStepNext() {
+        if (!isRunning) return;
+        if (!isPaused) {
+            isPaused = true;
+            btnPause.disabled = true;
+            btnContinue.disabled = false;
+            updateStatus('running', '已暂停（手动步进）');
+        }
+        if (currentStepIdx >= stepHistory.length - 1) {
+            onCompleted();
+            return;
+        }
+        advanceStep();
+    }
+
+    function onCompleted() {
+        stopAutoPlay();
+        isRunning = false;
+        isPaused = false;
+        btnPause.disabled = true;
+        btnContinue.disabled = true;
+        btnStepPrev.disabled = true;
+        btnStepNext.disabled = true;
+        btnSubmit.disabled = true;
+        updateStatus('completed', '演示完成');
+        setHint('演示已完成。可点击"重置"重新开始。', 'info');
+        Visualizer.renderStep({ type: 'completed' });
+    }
+
     function onReset() {
-        // 通知后端停止推送并清理会话
+        stopAutoPlay();
         WSManager.send({ action: 'reset' });
 
-        // 重置前端状态
         currentSessionId = null;
         currentAlgorithm = null;
         isPaused = false;
         isRunning = false;
         parsedInputData = null;
         totalSteps = 0;
+        stepHistory = [];
+        currentStepIdx = -1;
 
         dataInput.value = '';
         stepDesc.innerHTML = '请输入数据并点击"提交"开始演示...';
@@ -226,6 +330,8 @@
         btnSubmit.disabled = false;
         btnPause.disabled = true;
         btnContinue.disabled = true;
+        btnStepPrev.disabled = true;
+        btnStepNext.disabled = true;
 
         Visualizer.reset();
     }
@@ -234,9 +340,6 @@
      *  辅助函数
      * ═══════════════════════════════════════════════════════════ */
 
-    /**
-     * 根据当前选择的算法初始化对应的可视化画布
-     */
     function initVisualization(arr) {
         if (currentAlgorithm === 'heap_create') {
             Visualizer.initHeap(arr);
@@ -245,9 +348,6 @@
         }
     }
 
-    /**
-     * 更新状态徽章
-     */
     function updateStatus(status, message) {
         statusBadge.textContent = message;
         statusBadge.className = 'status-badge';
@@ -255,9 +355,6 @@
         if (status === 'running') statusBadge.classList.add('running');
     }
 
-    /**
-     * 更新底部提示文字
-     */
     function setHint(message, type) {
         hintText.textContent = message;
         hintText.style.color = '';
@@ -265,9 +362,6 @@
         else if (type === 'info') hintText.style.color = '#1a73e8';
     }
 
-    /**
-     * 更新输入框提示文字（根据选中的算法）
-     */
     function updateInputHint() {
         var algo = algoSelect.value;
         if (algo === 'heap_create') {
@@ -277,6 +371,5 @@
         }
     }
 
-    // 页面加载完成后初始化
     document.addEventListener('DOMContentLoaded', init);
 })();

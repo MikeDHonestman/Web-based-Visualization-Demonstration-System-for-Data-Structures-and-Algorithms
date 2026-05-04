@@ -141,6 +141,7 @@ body {
 .btn-warning { background: #ff9800; }
 .btn-success { background: #4caf50; }
 .btn-danger  { background: #f44336; }
+.btn-info    { background: #607d8b; }
 
 /* ── 步骤说明区域 ── */
 .description-panel {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据结构与算法可视化演示系统</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="frontend/style.css">
 </head>
 <body>
     <!-- ── 顶部标题栏 ── -->
@@ -42,6 +42,8 @@
             <button id="btnSubmit" class="btn btn-primary">提交</button>
             <button id="btnPause"  class="btn btn-warning" disabled>暂停</button>
             <button id="btnContinue" class="btn btn-success" disabled>继续</button>
+            <button id="btnStepPrev" class="btn btn-info" disabled>上一步</button>
+            <button id="btnStepNext" class="btn btn-info" disabled>下一步</button>
             <button id="btnReset"  class="btn btn-danger">重置</button>
         </div>
     </section>
@@ -70,8 +72,8 @@
     </footer>
 
     <!-- ── 前端模块加载（按依赖顺序） ── -->
-    <script src="socket.js"></script>
-    <script src="visualizer.js"></script>
-    <script src="main.js"></script>
+    <script src="frontend/socket.js"></script>
+    <script src="frontend/visualizer.js"></script>
+    <script src="frontend/main.js"></script>
 </body>
 </html>
