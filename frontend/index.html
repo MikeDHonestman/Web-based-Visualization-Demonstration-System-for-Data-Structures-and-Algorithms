@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据结构与算法可视化演示系统</title>
+    <link rel="stylesheet" href="frontend/style.css">
+</head>
+<body>
+    <!-- ── 顶部标题栏 ── -->
+    <header class="header">
+        <h1>数据结构与算法可视化演示系统</h1>
+        <span class="status-badge" id="statusBadge">就绪</span>
+    </header>
+
+    <!-- ── 输入控制区域 ── -->
+    <section class="control-panel">
+        <div class="input-row">
+            <label for="dataInput">输入数据：</label>
+            <input type="text" id="dataInput"
+                   placeholder="输入整数，用逗号分隔，如 4,10,3,5,1,8,6,2,7"
+                   autocomplete="off">
+        </div>
+        <div class="option-row">
+            <div class="option-group">
+                <label for="algoSelect">算法选择：</label>
+                <select id="algoSelect">
+                    <option value="heap_create">堆的创建</option>
+                    <option value="quicksort">快速排序</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label for="speedSelect">演示速度：</label>
+                <select id="speedSelect">
+                    <option value="0.3">快速</option>
+                    <option value="1.0" selected>正常</option>
+                    <option value="2.0">慢速</option>
+                </select>
+            </div>
+        </div>
+        <div class="button-row">
+            <button id="btnSubmit" class="btn btn-primary">提交</button>
+            <button id="btnPause"  class="btn btn-warning" disabled>暂停</button>
+            <button id="btnContinue" class="btn btn-success" disabled>继续</button>
+            <button id="btnStepPrev" class="btn btn-info" disabled>上一步</button>
+            <button id="btnStepNext" class="btn btn-info" disabled>下一步</button>
+            <button id="btnReset"  class="btn btn-danger">重置</button>
+        </div>
+    </section>
+
+    <!-- ── 步骤说明区域 ── -->
+    <section class="description-panel">
+        <h3>步骤说明</h3>
+        <div id="stepDescription" class="step-text">
+            请输入数据并点击"提交"开始演示...
+        </div>
+    </section>
+
+    <!-- ── 可视化渲染区域（SVG画布） ── -->
+    <section class="visualization-panel">
+        <h3>可视化演示</h3>
+        <div class="svg-container">
+            <svg id="mainSvg" width="100%" height="100%" viewBox="0 0 800 450"
+                 xmlns="http://www.w3.org/2000/svg">
+            </svg>
+        </div>
+    </section>
+
+    <!-- ── 页脚提示区域 ── -->
+    <footer class="footer">
+        <p id="hintText">提示：请输入整数并用逗号分隔后点击"提交"，系统将自动连接后端并演示算法过程。</p>
+    </footer>
+
+    <!-- ── 前端模块加载（按依赖顺序） ── -->
+    <script src="frontend/socket.js"></script>
+    <script src="frontend/visualizer.js"></script>
+    <script src="frontend/main.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@ var WSManager = (function () {
     'use strict';
 
     var ws = null;
-    var url = 'ws://localhost:5000/ws';
+    var url = 'ws://' + location.hostname + ':5000/ws';
     var messageHandlers = [];
     var statusHandlers = [];
     var reconnectTimer = null;

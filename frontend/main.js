@@ -142,7 +142,7 @@
         setHint('正在提交数据...', 'info');
         btnSubmit.disabled = true;
 
-        fetch('http://localhost:5000/api/submit', {
+        fetch('http://' + location.hostname + ':5000/api/submit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
