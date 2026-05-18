@@ -1,9 +1,3 @@
-/**
- * 可视化渲染模块 (visualizer.js)
- * 职责：将后端推送的标准化步骤数据转化为SVG可视化动画。
- *       支持堆创建（树形节点）和快速排序（数组条形图）两种渲染模式。
- *       提供初始化、分步渲染、重置等核心方法。
- */
 var Visualizer = (function () {
     'use strict';
 
@@ -11,7 +5,6 @@ var Visualizer = (function () {
     var svg = document.getElementById('mainSvg');
     var currentAlgorithm = null;
 
-    // 颜色定义（统一管理，便于调整）
     var COLORS = {
         defaultFill   : '#e8f0fe',
         defaultStroke : '#1a73e8',
@@ -27,12 +20,8 @@ var Visualizer = (function () {
         edgeStroke    : '#999',
     };
 
-    /* ═══════ 堆创建的树形布局坐标 ═══════
-     * 动态计算 nodes 在 800×450 画布上的坐标，支持 1~31 个节点
-     */
     function getHeapPosition(index) {
         var level = Math.floor(Math.log2(index + 1));
-        var totalLevels = Math.floor(Math.log2(index + 1)) + 1;
         var firstInLevel = Math.pow(2, level) - 1;
         var posInLevel = index - firstInLevel;
         var nodesInLevel = Math.pow(2, level);
@@ -43,24 +32,18 @@ var Visualizer = (function () {
 
     var NODE_RADIUS = 22;
 
-    /* ═══════ 快速排序条形图布局 ═══════ */
     var BAR_CHART_X = 40;
     var BAR_CHART_Y = 40;
     var BAR_CHART_MAX_WIDTH = 720;
     var BAR_CHART_MAX_HEIGHT = 200;
     var BAR_MIN_HEIGHT = 20;
 
-    /**
-     * 初始化堆可视化（绘制静态的树形框架）
-     * @param {number[]} arr 数组数据
-     */
     function initHeap(arr) {
         currentAlgorithm = 'heap_create';
         clearSvg();
 
         var n = arr.length;
 
-        // 绘制边（父节点 -> 子节点连接线）
         for (var i = 0; i < n; i++) {
             var leftChild = 2 * i + 1;
             var rightChild = 2 * i + 2;
@@ -68,16 +51,11 @@ var Visualizer = (function () {
             if (rightChild < n) drawEdge(getHeapPosition(i), getHeapPosition(rightChild));
         }
 
-        // 绘制节点（圆形+数值文字）
         for (var i = 0; i < n; i++) {
             drawHeapNode(getHeapPosition(i), arr[i], i);
         }
     }
 
-    /**
-     * 初始化快速排序可视化（绘制条形图框架）
-     * @param {number[]} arr 数组数据
-     */
     function initQuickSort(arr) {
         currentAlgorithm = 'quicksort';
         clearSvg();
@@ -89,7 +67,6 @@ var Visualizer = (function () {
         var maxVal = Math.max.apply(null, arr.map(Math.abs)) || 1;
         var scaleY = BAR_CHART_MAX_HEIGHT / maxVal;
 
-        // 绘制数值标签
         for (var i = 0; i < n; i++) {
             var x = BAR_CHART_X + i * (barWidth + 4);
             var barH = Math.max(BAR_MIN_HEIGHT, Math.abs(arr[i]) * scaleY);
@@ -99,10 +76,6 @@ var Visualizer = (function () {
         }
     }
 
-    /**
-     * 根据算法步骤数据更新可视化
-     * @param {Object} step 后端推送的标准化步骤数据
-     */
     function renderStep(step) {
         if (!step || step.type === 'completed') {
             animAllDone();
@@ -116,15 +89,10 @@ var Visualizer = (function () {
         }
     }
 
-    /**
-     * 重置可视化：清空SVG，恢复初始状态
-     */
     function reset() {
         currentAlgorithm = null;
         clearSvg();
     }
-
-    /* ──────────── 堆渲染详细实现 ──────────── */
 
     function renderHeapStep(step) {
         var arr = step.array || [];
@@ -133,11 +101,9 @@ var Visualizer = (function () {
         var swap = step.swap;
         var n = arr.length;
 
-        // 清除旧节点（保留边）
         var oldNodes = svg.querySelectorAll('g.heap-node');
         oldNodes.forEach(function (g) { g.remove(); });
 
-        // 重新绘制所有节点
         for (var i = 0; i < n; i++) {
             var color = 'default';
             if (highlight.indexOf(i) !== -1) color = 'highlight';
@@ -145,7 +111,6 @@ var Visualizer = (function () {
             drawHeapNode(getHeapPosition(i), arr[i], i, color);
         }
 
-        // 交换动画：在交换的两个节点之间添加临时的动画指示
         if (swap && swap.length === 2) {
             var p1 = getHeapPosition(swap[0]);
             var p2 = getHeapPosition(swap[1]);
@@ -169,7 +134,6 @@ var Visualizer = (function () {
         circle.setAttribute('stroke-width', '2.5');
         circle.style.transition = 'fill 0.4s, stroke 0.4s';
 
-        // 高亮节点添加脉冲动画
         if (color === 'highlight' || color === 'compare') {
             circle.style.animation = 'nodePulse 0.6s ease-in-out';
         }
@@ -212,13 +176,10 @@ var Visualizer = (function () {
         line.style.animation = 'fadeIn 0.3s ease-out';
         svg.appendChild(line);
 
-        // 0.8秒后自动移除
         setTimeout(function () {
             if (line.parentNode) line.parentNode.removeChild(line);
         }, 800);
     }
-
-    /* ──────────── 快速排序渲染详细实现 ──────────── */
 
     function renderQuickSortStep(step) {
         var arr = step.array || [];
@@ -235,10 +196,8 @@ var Visualizer = (function () {
         var maxVal = Math.max.apply(null, arr.map(Math.abs)) || 1;
         var scaleY = BAR_CHART_MAX_HEIGHT / maxVal;
 
-        // 清除旧元素
         clearSvg();
 
-        // 重绘所有条形
         for (var i = 0; i < n; i++) {
             var x = BAR_CHART_X + i * (barWidth + 4);
             var barH = Math.max(BAR_MIN_HEIGHT, Math.abs(arr[i]) * scaleY);
@@ -252,7 +211,6 @@ var Visualizer = (function () {
             drawBar(x, y, barWidth, barH, arr[i], i, color);
         }
 
-        // 绘制指针标记（left/right指针）
         if (leftPtr !== null && leftPtr !== undefined) {
             drawPointer(leftPtr, barWidth, 'L', COLORS.compareStroke, n);
         }
@@ -288,7 +246,6 @@ var Visualizer = (function () {
         text.setAttribute('font-weight', '500');
         text.textContent = value;
 
-        // 索引标签
         var idxText = document.createElementNS(svgNS, 'text');
         idxText.setAttribute('x', x + w / 2);
         idxText.setAttribute('y', y - 6);
@@ -324,8 +281,6 @@ var Visualizer = (function () {
         svg.appendChild(tri);
         svg.appendChild(txt);
     }
-
-    /* ──────────── 公共工具 ──────────── */
 
     function clearSvg() {
         while (svg.firstChild) {

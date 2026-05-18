@@ -7,13 +7,11 @@
     <link rel="stylesheet" href="frontend/style.css">
 </head>
 <body>
-    <!-- ── 顶部标题栏 ── -->
     <header class="header">
         <h1>数据结构与算法可视化演示系统</h1>
         <span class="status-badge" id="statusBadge">就绪</span>
     </header>
 
-    <!-- ── 输入控制区域 ── -->
     <section class="control-panel">
         <div class="input-row">
             <label for="dataInput">输入数据：</label>
@@ -48,7 +46,6 @@
         </div>
     </section>
 
-    <!-- ── 步骤说明区域 ── -->
     <section class="description-panel">
         <h3>步骤说明</h3>
         <div id="stepDescription" class="step-text">
@@ -56,7 +53,6 @@
         </div>
     </section>
 
-    <!-- ── 可视化渲染区域（SVG画布） ── -->
     <section class="visualization-panel">
         <h3>可视化演示</h3>
         <div class="svg-container">
@@ -66,12 +62,10 @@
         </div>
     </section>
 
-    <!-- ── 页脚提示区域 ── -->
     <footer class="footer">
         <p id="hintText">提示：请输入整数并用逗号分隔后点击"提交"，系统将自动连接后端并演示算法过程。</p>
     </footer>
 
-    <!-- ── 前端模块加载（按依赖顺序） ── -->
     <script src="frontend/socket.js"></script>
     <script src="frontend/visualizer.js"></script>
     <script src="frontend/main.js"></script>

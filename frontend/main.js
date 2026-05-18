@@ -1,13 +1,6 @@
-/**
- * 前端主逻辑模块 (main.js)
- * 职责：整合前端所有模块，处理用户交互，协调输入解析、请求提交、
- *       WebSocket通信、可视化渲染的完整流程。
- *       支持自动播放与手动步进（上一步/下一步）两种模式。
- */
 (function () {
     'use strict';
 
-    /* ── DOM元素引用 ── */
     var dataInput      = document.getElementById('dataInput');
     var algoSelect     = document.getElementById('algoSelect');
     var speedSelect    = document.getElementById('speedSelect');
@@ -21,7 +14,6 @@
     var hintText       = document.getElementById('hintText');
     var statusBadge    = document.getElementById('statusBadge');
 
-    /* ── 状态变量 ── */
     var currentSessionId = null;
     var currentAlgorithm = null;
     var isPaused = false;
@@ -29,14 +21,10 @@
     var parsedInputData = null;
     var totalSteps = 0;
 
-    // 步进历史
     var stepHistory = [];
     var currentStepIdx = -1;
     var autoPlayTimer = null;
 
-    /* ═══════════════════════════════════════════════════════════
-     *  页面初始化
-     * ═══════════════════════════════════════════════════════════ */
     function init() {
         WSManager.connect();
 
@@ -59,9 +47,6 @@
         updateInputHint();
     }
 
-    /* ═══════════════════════════════════════════════════════════
-     *  消息处理（支持批量步骤和单步骤两种格式）
-     * ═══════════════════════════════════════════════════════════ */
     function handleMessage(data) {
         if (data.type === 'connected') return;
         if (data.type === 'error') {
@@ -74,7 +59,6 @@
         }
         if (data.type === 'reset_done') return;
 
-        // 批量步骤数据
         if (data.type === 'steps_batch' && data.steps) {
             stepHistory = data.steps;
             totalSteps = data.total_steps || data.steps.length;
@@ -83,7 +67,6 @@
             return;
         }
 
-        // 兼容旧格式：单步骤数据
         if (data.step_id !== undefined || data.description) {
             stepHistory.push(data);
             totalSteps = stepHistory.length;
@@ -94,9 +77,6 @@
         }
     }
 
-    /* ═══════════════════════════════════════════════════════════
-     *  提交处理
-     * ═══════════════════════════════════════════════════════════ */
     function onSubmit() {
         if (isRunning) {
             setHint('演示正在进行中，请先重置', 'error');
@@ -191,9 +171,6 @@
             });
     }
 
-    /* ═══════════════════════════════════════════════════════════
-     *  自动播放
-     * ═══════════════════════════════════════════════════════════ */
     function startAutoPlay() {
         var interval = parseFloat(speedSelect.value) * 1000 || 1000;
         updateStatus('running', '演示中...');
@@ -246,10 +223,6 @@
 
         Visualizer.renderStep(step);
     }
-
-    /* ═══════════════════════════════════════════════════════════
-     *  交互控制：暂停 / 继续 / 上一步 / 下一步 / 重置
-     * ═══════════════════════════════════════════════════════════ */
 
     function onPause() {
         if (!isRunning || isPaused) return;
@@ -335,10 +308,6 @@
 
         Visualizer.reset();
     }
-
-    /* ═══════════════════════════════════════════════════════════
-     *  辅助函数
-     * ═══════════════════════════════════════════════════════════ */
 
     function initVisualization(arr) {
         if (currentAlgorithm === 'heap_create') {

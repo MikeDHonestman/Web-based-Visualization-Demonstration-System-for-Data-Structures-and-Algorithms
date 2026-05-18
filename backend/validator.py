@@ -1,16 +1,4 @@
-"""
-数据校验模块 (validator.py)
-职责：对前端提交的输入数据进行合法性校验，根据不同算法的输入要求，
-      验证数据格式、长度、元素类型，返回校验结果及错误提示。
-"""
-
 def validate_input(data, algorithm):
-    """
-    校验前端提交的输入数据
-    :param data: 前端提交的原始数据
-    :param algorithm: 算法类型，如 'heap_create' / 'quicksort'
-    :return: (is_valid, error_message_or_parsed_array)
-    """
     if not isinstance(data, list):
         return False, "输入数据必须为数组格式（如 [1,2,3]）"
 
